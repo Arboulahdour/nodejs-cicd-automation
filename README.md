@@ -112,7 +112,7 @@ Must have Ansible and Jenkins installed on build server
 
     - name: "Deploy Step: Run the container"
       docker_container:
-        name: flaskapp
+        name: productApp
         image: "{{ image_name }}:1.0"
         recreate: yes
         pull: yes
