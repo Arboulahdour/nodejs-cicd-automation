@@ -117,7 +117,7 @@ Must have Ansible and Jenkins installed on build server
         recreate: yes
         pull: yes
         published_ports:
-          - "8888:3000"
+          - "8889:3000"
 ~~~
 
 ### Hosts file (hosts)
