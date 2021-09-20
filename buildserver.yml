@@ -27,9 +27,7 @@
           path: "{{ repo_dest }}"
           pull: yes
         name: "{{ image_name }}"
-        tag: "{{ item }}"
+        tag: "{{ image_tag }}"
         push: true
         force_tag: yes
         force_source: yes
-      with_items:
-        - "{{ image_tag }}"
