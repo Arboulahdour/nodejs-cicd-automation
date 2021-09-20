@@ -32,4 +32,4 @@
         force_tag: yes
         force_source: yes
       with_items:
-        - 1.0
+        - "{{ image_tag }}"
