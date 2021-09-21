@@ -1,0 +1,24 @@
+pipeline {
+    agent any
+    stages {
+        stage('Getting Info') {
+            steps {
+                echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+            }
+        }
+        
+        stage('TF Init&Plan') {
+            steps {
+                sh 'terraform init'
+                sh 'terraform plan'
+            } 
+        }
+        
+        stage('TF Apply') {
+            steps {
+                sh 'terraform apply -input=false -auto-approve'
+            }
+        }
+
+    }
+}
