@@ -149,65 +149,30 @@ docker_password: ""
 
 ##### This is the jenkinsfile used for this pipeline (jenkinsfile)
 ~~~
-- name: "Run Application using Docker On Dev Server"
-  hosts: dev
-  become: true
-  gather_facts: no
-  vars_files:
-    - docker.vars
-
-  tasks:
-
-    - name: "Deploy Step: List of additional package Installation"
-      yum:
-        name:
-        - git
-        - python3-pip
-        state: present
-
-    - name: "Deploy Step: Python docker extension installation"
-      pip:
-        name: docker-py
-
-    - name: "Deploy Step: Docker service restart & enable"
-      service:
-        name: docker
-        state: restarted
-        enabled: true
+pipeline {
+    agent any
+    stages {
+        stage('Getting Info') {
+            steps {
+                echo "Running ${env.BUILD_ID} on ${env.JENKINS_URL}"
+            }
+        }
         
-    - name: "Deploy Step: Run the mongo container"
-      docker_container:
-        name: mongodb
-        image: "{{ mongo_image_name }}"
-        recreate: yes
-        pull: yes
-        published_ports:
-          - "27017:27017"
-        env:
-          - MONGO_INITDB_ROOT_USERNAME: "admin"
-          - MONGO_INITDB_ROOT_PASSWORD: "password"
-          
-    - name: "Deploy Step: Run the mongo-express container"
-      docker_container:
-        name: mongodb-express
-        image: "{{ mongo_express_image_name }}"
-        recreate: yes
-        pull: yes
-        published_ports:
-          - "8081:8081"
-        env:
-          - ME_CONFIG_MONGODB_ADMINUSERNAME: "admin"
-          - ME_CONFIG_MONGODB_ADMINPASSWORD: "password"
-          - ME_CONFIG_MONGODB_SERVER: "mongodb"
+        stage('TF Init&Plan') {
+            steps {
+                sh 'terraform init'
+                sh 'terraform plan'
+            } 
+        }
+        
+        stage('TF Apply') {
+            steps {
+                sh 'terraform apply -input=false -auto-approve'
+            }
+        }
 
-    - name: "Deploy Step: Run the container"
-      docker_container:
-        name: productApp
-        image: "{{ image_name }}:1.0"
-        recreate: yes
-        pull: yes
-        published_ports:
-          - "8889:3000"
+    }
+}
 ~~~
 
 ### 3. Deploy the application on Kubernetes cluster using Terraform
