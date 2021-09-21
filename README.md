@@ -179,65 +179,67 @@ pipeline {
 
 ##### This is the main Terraform's file used for the deployment in Kubernetes (main.tf)
 ~~~
-- name: "Run Application using Docker On Dev Server"
-  hosts: dev
-  become: true
-  gather_facts: no
-  vars_files:
-    - docker.vars
+terraform {
+  required_providers {
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = ">= 2.0.0"
+    }
+  }
+}
+provider "kubernetes" {
+  host = "https://192.168.39.130:8443"
+#  config_path = false
+  client_certificate = file("/var/lib/jenkins/workspace/nodejs-deploy-k8s/.minikube/profiles/minikube/client.crt")
+  client_key = file("/var/lib/jenkins/workspace/nodejs-deploy-k8s/.minikube/profiles/minikube/client.key")
+  cluster_ca_certificate = file("/var/lib/jenkins/workspace/nodejs-deploy-k8s/.minikube/ca.crt")	
+}
 
-  tasks:
-
-    - name: "Deploy Step: List of additional package Installation"
-      yum:
-        name:
-        - git
-        - python3-pip
-        state: present
-
-    - name: "Deploy Step: Python docker extension installation"
-      pip:
-        name: docker-py
-
-    - name: "Deploy Step: Docker service restart & enable"
-      service:
-        name: docker
-        state: restarted
-        enabled: true
-        
-    - name: "Deploy Step: Run the mongo container"
-      docker_container:
-        name: mongodb
-        image: "{{ mongo_image_name }}"
-        recreate: yes
-        pull: yes
-        published_ports:
-          - "27017:27017"
-        env:
-          - MONGO_INITDB_ROOT_USERNAME: "admin"
-          - MONGO_INITDB_ROOT_PASSWORD: "password"
-          
-    - name: "Deploy Step: Run the mongo-express container"
-      docker_container:
-        name: mongodb-express
-        image: "{{ mongo_express_image_name }}"
-        recreate: yes
-        pull: yes
-        published_ports:
-          - "8081:8081"
-        env:
-          - ME_CONFIG_MONGODB_ADMINUSERNAME: "admin"
-          - ME_CONFIG_MONGODB_ADMINPASSWORD: "password"
-          - ME_CONFIG_MONGODB_SERVER: "mongodb"
-
-    - name: "Deploy Step: Run the container"
-      docker_container:
-        name: productApp
-        image: "{{ image_name }}:1.0"
-        recreate: yes
-        pull: yes
-        published_ports:
-          - "8889:3000"
+resource "kubernetes_deployment" "product-dep" {
+  metadata {
+    name = "product-dep"
+  }
+  spec {
+    replicas = 3
+    selector {
+      match_labels = {
+        app = "product"
+      }
+    }
+    template {
+      metadata {
+        labels = {
+          app = "product"
+        }
+      }
+      spec {
+        container {
+          image = "arboulahdour/nodejs-product:1.0.0"
+          name  = "product-container"
+          port {
+            container_port = 3000
+          }
+        }
+      }
+    }
+  }
+}
+resource "kubernetes_service" "product-svc" {
+  metadata {
+    name = "product-svc"
+  }
+  spec {
+    selector = {
+      app = "product"
+    }
+    type = "NodePort"
+    port {
+      node_port   = 30000
+      port        = 8000
+      target_port = 3000
+    }
+  }
+}
 ~~~
 
 
